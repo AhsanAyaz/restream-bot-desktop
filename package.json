@@ -1,26 +1,43 @@
 {
-  "name": "restream-bot-desktop",
-  "version": "0.1.0",
-  "private": true,
+  "name": "soundboard-app",
+  "version": "1.0.0",
+  "description": "Soundboard app with hot-key configuration",
+  "main": "main.js",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "concurrently \"npm run start:react\" \"npm run start:electron\"",
+    "start:react": "cross-env BROWSER=none react-scripts start",
+    "start:electron": "wait-on http://localhost:3000 && electron .",
+    "build": "react-scripts build",
+    "build:electron": "electron-builder",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "react": "^18",
-    "react-dom": "^18",
-    "next": "14.2.16"
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "electron-is-dev": "^2.0.0",
+    "robotjs": "^0.6.0",
+    "daisyui": "^2.51.5"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.16"
+    "@types/node": "^16.0.0",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "autoprefixer": "^10.4.0",
+    "concurrently": "^7.0.0",
+    "cross-env": "^7.0.3",
+    "electron": "^13.0.0",
+    "electron-builder": "^22.11.7",
+    "postcss": "^8.4.0",
+    "react-scripts": "5.0.1",
+    "tailwindcss": "^3.0.0",
+    "typescript": "^4.5.0",
+    "wait-on": "^6.0.1"
+  },
+  "browserslist": {
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
   }
 }
+

@@ -1,0 +1,12 @@
+appId: com.example.soundboard-app
+productName: Soundboard App
+directories:
+  output: dist
+  buildResources: build
+files:
+  - from: .
+    filter:
+      - package.json
+      - app
+publish: null
+
