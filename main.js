@@ -3,6 +3,7 @@ const path = require("path");
 const isDev = require("electron-is-dev");
 const robot = require("robotjs");
 const { pathToFileURL } = require("url");
+const { createWindows } = require("./restream");
 // const startChatObserver = require("./chatObserver");
 
 let mainWindow;
@@ -53,7 +54,7 @@ function createWindow() {
 
   // Start chat observer after window loads
   mainWindow.webContents.on("did-finish-load", () => {
-    // startChatObserver(mainWindow);
+    createWindows(executeCommand);
   });
 }
 
@@ -63,6 +64,27 @@ function simulateHotkey({ modifiers, key }) {
   robot.keyTap(key);
   modifiers.forEach((m) => robot.keyToggle(m, "up"));
   console.log(`Triggered hotkey: ${modifiers.join("+")}+${key}`);
+}
+
+function executeCommand(command) {
+  console.log(`Executing command: ${command}`);
+
+  if (command === "stop-all-sounds") {
+    audioWindow.webContents.send("stop-all-sounds");
+    return;
+  }
+
+  const effect = soundEffectsList.find((effect) => effect.command === command);
+  if (effect) {
+    if (effect.hotkey) {
+      simulateHotkey(effect.hotkey);
+      return;
+    }
+
+    if (effect.file) {
+      audioWindow.webContents.send("play-sound", effect.file);
+    }
+  }
 }
 
 app.on("ready", createWindow);
@@ -108,22 +130,5 @@ ipcMain.on("unregister-soundboard-hotkey", async (_, effect) => {
 });
 
 ipcMain.on("execute-command", (_, command) => {
-  console.log(`Executing command: ${command}`);
-
-  if (command === "stop-all-sounds") {
-    audioWindow.webContents.send("stop-all-sounds");
-    return;
-  }
-
-  const effect = soundEffectsList.find((effect) => effect.command === command);
-  if (effect) {
-    if (effect.hotkey) {
-      simulateHotkey(effect.hotkey);
-      return;
-    }
-
-    if (effect.file) {
-      audioWindow.webContents.send("play-sound", effect.file);
-    }
-  }
+  executeCommand(command);
 });

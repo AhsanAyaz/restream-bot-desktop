@@ -1,76 +1,65 @@
-const puppeteer = require("puppeteer");
+const { BrowserWindow } = require("electron");
 const { config } = require("dotenv");
+const isDev = require("electron-is-dev");
+
 config();
 
-// Constants
-const OBSERVE_INTERVAL_IN_MS = 2000;
-const CHAT_SELECTOR =
-  '.restream-embed-themes-chat-container .message-item:not([data-processed="true"])';
-
+let executeCommand;
+let chatWindow;
 const COMMAND_PATTERN = /^!/;
 
-async function parseMessage({ text, imageUrl, username }) {
-  if (COMMAND_PATTERN.test(text)) {
-    console.log({ imageUrl, text, username });
-    ipcRenderer.send("execute-command", text.trim());
+function createWindows(executeCommandFn) {
+  executeCommand = executeCommandFn;
+  chatWindow = new BrowserWindow({
+    show: false, // Hide the chat monitoring window
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+  if (isDev) {
+    chatWindow.webContents.openDevTools();
   }
+
+  chatWindow.loadURL(process.env.RESTREAM_CHAT_LINK || "");
+
+  // Handle chat window DOM ready
+  chatWindow.webContents.on("dom-ready", () => {
+    startChatObservation();
+  });
 }
 
-async function extractMessageData(page, element) {
-  const message = await element.evaluate((el) => {
-    const imageEl = el.querySelector('[alt="avatar"]');
-    const usernameEl = el.querySelector(".MuiTypography-subtitle2");
-    const textEl = el.querySelector(".chat-text-normal");
-
-    return {
-      imageUrl: imageEl?.src || "",
-      username: usernameEl?.textContent || "",
-      text: textEl?.textContent || "",
-    };
-  });
-
-  // Mark the message as processed
-  await element.evaluate((el) => {
-    el.setAttribute("data-processed", "true");
-  });
-
-  return message;
-}
-
-async function observeMessages(page) {
+function startChatObservation() {
   setInterval(async () => {
     try {
-      const messageElements = await page.$$(CHAT_SELECTOR);
-      console.log({ messageElements });
+      const messages = await chatWindow.webContents.executeJavaScript(`
+        Array.from(document.querySelectorAll('.restream-embed-themes-chat-container .message-item:not([data-processed="true"]'))
+          .map(el => {
+            const textEl = el.querySelector('.chat-text-normal');
+            if (!textEl) return null;
+            
+            const data = {
+              text: textEl.textContent.trim(),
+              username: el.querySelector('.MuiTypography-subtitle2')?.textContent || '',
+              imageUrl: el.querySelector('[alt="avatar"]')?.src || ''
+            };
+            
+            el.setAttribute('data-processed', 'true');
+            return data;
+          }).filter(Boolean)
+      `);
 
-      for (const element of messageElements) {
-        const message = await extractMessageData(page, element);
-        await parseMessage(message);
-      }
+      messages.forEach(({ text }) => {
+        if (COMMAND_PATTERN.test(text)) {
+          executeCommand(text.trim());
+        }
+      });
     } catch (error) {
-      console.error("Error processing messages:", error);
+      console.error("Chat observation error:", error);
     }
-  }, OBSERVE_INTERVAL_IN_MS);
+  }, 2000);
 }
 
-async function main() {
-  const browser = await puppeteer.launch({
-    headless: false, // Set to true in production
-  });
-
-  const page = await browser.newPage();
-
-  // Navigate to your Restream chat page
-  await page.goto(process.env.RESTREAM_CHAT_LINK || "");
-
-  // Start observing messages
-  await observeMessages(page);
-
-  // Handle cleanup on process termination
-  process.on("SIGINT", async () => {
-    await browser.close();
-    process.exit();
-  });
-}
-
-main().catch(console.error);
+module.exports = {
+  createWindows,
+};
