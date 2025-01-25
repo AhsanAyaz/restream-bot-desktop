@@ -4,7 +4,6 @@ const isDev = require("electron-is-dev");
 const robot = require("robotjs");
 const { pathToFileURL } = require("url");
 const { createWindows } = require("./restream");
-// const startChatObserver = require("./chatObserver");
 
 let mainWindow;
 let audioWindow; // Hidden window for audio playback
@@ -26,7 +25,7 @@ function createWindow() {
 
   // Create hidden audio window
   audioWindow = new BrowserWindow({
-    show: false,
+    show: true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,

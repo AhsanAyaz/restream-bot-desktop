@@ -11,7 +11,7 @@ const COMMAND_PATTERN = /^!/;
 function createWindows(executeCommandFn) {
   executeCommand = executeCommandFn;
   chatWindow = new BrowserWindow({
-    show: false, // Hide the chat monitoring window
+    show: true, // Hide the chat monitoring window
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

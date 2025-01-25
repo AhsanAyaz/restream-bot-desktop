@@ -1,12 +1,7 @@
-appId: com.example.soundboard-app
+appId: com.yourcompany.soundboard
 productName: Soundboard App
 directories:
-  output: dist
-  buildResources: build
-files:
-  - from: .
-    filter:
-      - package.json
-      - app
-publish: null
-
+  buildResources: "assets"
+npmRebuild: false
+nodeGypRebuild: false 
+buildDependenciesFromSource: false
