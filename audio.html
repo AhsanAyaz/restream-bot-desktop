@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Audio Player</title>
+    <script src="./node_modules/howler/dist/howler.min.js"></script>
+    <script>
+      const { ipcRenderer } = require("electron");
+
+      let sounds = {};
+
+      ipcRenderer.on("play-sound", (event, filePath) => {
+        const soundId = Date.now().toString();
+
+        sounds[soundId] = new Howl({
+          src: [filePath],
+          html5: true,
+          onend: () => delete sounds[soundId],
+        });
+
+        sounds[soundId].play();
+      });
+
+      ipcRenderer.on("stop-all-sounds", () => {
+        Howler.stop();
+        sounds = {};
+      });
+    </script>
+  </head>
+  <body></body>
+</html>

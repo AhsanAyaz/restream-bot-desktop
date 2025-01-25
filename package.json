@@ -14,11 +14,14 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "daisyui": "^2.51.5",
+    "dotenv": "^16.4.7",
+    "electron-is-dev": "^2.0.0",
+    "howler": "^2.2.4",
+    "puppeteer-core": "^24.1.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "electron-is-dev": "^2.0.0",
-    "robotjs": "^0.6.0",
-    "daisyui": "^2.51.5"
+    "robotjs": "^0.6.0"
   },
   "devDependencies": {
     "@types/node": "^16.0.0",
@@ -36,8 +39,15 @@
     "wait-on": "^6.0.1"
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
-

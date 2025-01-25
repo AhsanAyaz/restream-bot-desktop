@@ -5,8 +5,7 @@ export interface Hotkey {
 
 export interface SoundEffect {
   command: string;
-  hotkey: Hotkey;
+  hotkey?: Hotkey;
   description: string;
-  file: string;
+  file?: string;
 }
-

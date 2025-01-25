@@ -2,13 +2,20 @@ const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 const isDev = require("electron-is-dev");
 const robot = require("robotjs");
+const { pathToFileURL } = require("url");
+// const startChatObserver = require("./chatObserver");
 
 let mainWindow;
+let audioWindow; // Hidden window for audio playback
+const audioFilePath = path.join(__dirname, "audio.html");
+const audioFileURL = pathToFileURL(audioFilePath).href;
+console.log({ audioHTMLPath: audioFileURL });
+let soundEffectsList = [];
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 900,
-    height: 680,
+    width: 1920,
+    height: 1080,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -16,17 +23,46 @@ function createWindow() {
     },
   });
 
+  // Create hidden audio window
+  audioWindow = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      webSecurity: false,
+    },
+  });
+
+  audioWindow.loadURL(audioFileURL);
+
   mainWindow.loadURL(
     isDev
       ? "http://localhost:3000"
-      : `file://${path.join(__dirname, "../build/index.html")}`
+      : pathToFileURL(path.join(__dirname, "../build/index.html")).href
   );
 
   if (isDev) {
     mainWindow.webContents.openDevTools();
+    audioWindow.webContents.openDevTools();
   }
 
-  mainWindow.on("closed", () => (mainWindow = null));
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+    audioWindow.close();
+  });
+
+  // Start chat observer after window loads
+  mainWindow.webContents.on("did-finish-load", () => {
+    // startChatObserver(mainWindow);
+  });
+}
+
+function simulateHotkey({ modifiers, key }) {
+  console.log(`Triggering hotkey: ${modifiers.join("+")}+${key}`);
+  modifiers.forEach((m) => robot.keyToggle(m, "down"));
+  robot.keyTap(key);
+  modifiers.forEach((m) => robot.keyToggle(m, "up"));
+  console.log(`Triggered hotkey: ${modifiers.join("+")}+${key}`);
 }
 
 app.on("ready", createWindow);
@@ -44,7 +80,6 @@ app.on("activate", () => {
 });
 
 ipcMain.handle("select-file", async () => {
-  console.log("here as well");
   const result = await dialog.showOpenDialog({
     properties: ["openFile"],
     filters: [{ name: "Audio", extensions: ["mp3", "wav", "ogg"] }],
@@ -56,16 +91,39 @@ ipcMain.handle("select-file", async () => {
   return null;
 });
 
-ipcMain.handle("register-hotkey", async () => {
+ipcMain.on("register-soundboard-hotkey", async (_, effect) => {
   // register hotkey, to play the sound
+  const parsedEffect = JSON.parse(effect);
+  soundEffectsList = [parsedEffect, ...soundEffectsList];
+  console.log("registered effect in main.js", effect);
 });
 
-ipcMain.handle("unregister-hotkey", async () => {
-  // unregister hotkey, to play the sound
+ipcMain.on("unregister-soundboard-hotkey", async (_, effect) => {
+  // Implementation depends on how you want to unregister (not covered here)
+  const parsedEffect = JSON.parse(effect);
+  soundEffectsList = soundEffectsList.filter(
+    (eff) => eff.command !== parsedEffect.command
+  );
+  console.log("unregistered effect in main.js", effect);
 });
 
 ipcMain.on("execute-command", (_, command) => {
   console.log(`Executing command: ${command}`);
-  // Implement the logic to execute the command and play the sound
-  // You can use the 'play-sound' npm package to play the sound file
+
+  if (command === "stop-all-sounds") {
+    audioWindow.webContents.send("stop-all-sounds");
+    return;
+  }
+
+  const effect = soundEffectsList.find((effect) => effect.command === command);
+  if (effect) {
+    if (effect.hotkey) {
+      simulateHotkey(effect.hotkey);
+      return;
+    }
+
+    if (effect.file) {
+      audioWindow.webContents.send("play-sound", effect.file);
+    }
+  }
 });

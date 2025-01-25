@@ -16,10 +16,14 @@ const AddSoundEffect: React.FC<Props> = ({ onAdd }) => {
     e.preventDefault();
     const newEffect: SoundEffect = {
       command,
-      hotkey: { modifiers, key },
       description,
-      file,
     };
+    if (key || modifiers.length) {
+      newEffect.hotkey = { modifiers, key };
+    }
+    if (file) {
+      newEffect.file = file;
+    }
     onAdd(newEffect);
     setCommand("");
     setModifiers([]);
@@ -78,7 +82,6 @@ const AddSoundEffect: React.FC<Props> = ({ onAdd }) => {
           value={key}
           onChange={(e) => setKey(e.target.value)}
           className="input input-bordered w-full"
-          required
         />
       </div>
       <div>
